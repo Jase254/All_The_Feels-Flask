@@ -1,2 +1,6 @@
 .idea
 virtualenvy/lib
+virtual3.6/lib
+venv3.5/
+*.h5
+__pycache__
