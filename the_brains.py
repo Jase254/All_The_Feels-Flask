@@ -31,8 +31,8 @@ auth.set_access_token(access_token, access_token_secret)
 
 API = tweepy.API(auth)
 
-model = load_model('gs://all_the_feels_models/LSTMmultiv1.h5')
-# model = load_model('LSTMmultiv1.h5')
+#model = load_model('gs://all_the_feels_models/LSTMmultiv1.h5')
+model = load_model('LSTMmultiv1.h5')
 model._make_predict_function()
 graph = tf.get_default_graph()
 
@@ -67,13 +67,14 @@ def search(search_term):
 
     emotions = ['Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', "Love", 'Optimism', "Pessimism", 'Sadness', 'Suprise', "Trust"]
     pred_dict = {}
+    pred_dict['title'] = search_term
     for i in range(11):
         pred_dict[emotions[i]] = pred[i][0].tolist()[0]
 
     print(pred_dict, file=sys.stderr)
 
-    return jsonify(pred_dict)
+    return jsonify([pred_dict])
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

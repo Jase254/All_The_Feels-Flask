@@ -1,6 +1,7 @@
 .idea
 virtualenvy/lib
 virtual3.6/lib
+windowsvenv/
 venv3.5/
 *.h5
 __pycache__
