@@ -36,6 +36,8 @@ model = load_model('LSTMmultiv1.h5')
 model._make_predict_function()
 graph = tf.get_default_graph()
 
+sinceId = None
+max_id = -1
 
 def preprocess(tweet):
     tweet = re.sub('@\w+', ' ', tweet)
@@ -59,21 +61,56 @@ def hello_world():
 def search(search_term):
     global graph
 
-    processed = preprocess(search_term)
 
-    with graph.as_default():
-        pred = model.predict(processed)
-
+    tweetsPerQuery = 50
+    documents = []
+    sentiments = []
+    total_score = 0
+    json_array = []
+    global max_id
+    global sinceId
 
     emotions = ['Anger', 'Anticipation', 'Disgust', 'Fear', 'Joy', "Love", 'Optimism', "Pessimism", 'Sadness', 'Suprise', "Trust"]
-    pred_dict = {}
-    pred_dict['title'] = search_term
-    for i in range(11):
-        pred_dict[emotions[i]] = pred[i][0].tolist()[0]
 
-    print(pred_dict, file=sys.stderr)
+    if(max_id <= 0):
+        if(not sinceId):
+            new_tweets = API.search(q=search_term, count=tweetsPerQuery, lang='en', tweet_mode='extended')
+        else:
+            new_tweets = API.search(q=search_term, count=tweetsPerQuery, lang='en', since_id=sinceId, tweet_mode='extended')
+    else:
+        if(not sinceId):
+            new_tweets = API.search(q=search_term, count=tweetsPerQuery, lang='en', tweet_mode='extended', max_id=str(max_id - 1))
+        else:
+            new_tweets = API.search(q=search_term, count=tweetsPerQuery, lang='en', since_id=sinceId, tweet_mode='extended', max_id=str(max_id - 1))
+        
+    for tweet in new_tweets:
+        print(tweet.full_text, file=sys.stderr)
+        #ignore retweets
+        try:
+            if tweet.retweeted_status:
+                continue
+        except:
+            #preprocess the tweet
+            processed = preprocess(tweet.full_text)
 
-    return jsonify([pred_dict])
+            #run processed tweet through the model
+            with graph.as_default():
+                pred = model.predict(processed)
+
+            #store tweet with prediction scores
+            pred_dict = {}
+            pred_dict['title'] = tweet.full_text
+            pred_dict['name'] = '@' + tweet.user.screen_name
+
+            for i in range(11):
+                pred_dict[emotions[i]] = pred[i][0].tolist()[0]
+
+            json_array.append(pred_dict.copy())
+
+   #print(pred_dict, file=sys.stderr)
+
+    max_id = new_tweets[-1].id
+    return jsonify(json_array)
 
 
 if __name__ == '__main__':
